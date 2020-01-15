@@ -3,7 +3,7 @@ package main
 import (
     "github.com/veandco/go-sdl2/sdl"
     "fmt"
-    //"time"
+    "time"
 )
 
 const winWidth, winHeight int = 800, 600
@@ -69,13 +69,19 @@ func main() {
     
     pixels := make([]byte, winWidth * winHeight * 4)
     
-    player := entity{pos{100.0, 100.0}, color{255, 255, 255}, 5, 5, 10, 0}
+    player := &ship{
+        entity: entity{pos{400, 500}, color{255, 255, 255}, 5, 5, 150, 0},
+        bullet: bullet{pos{0, 0}, color{255, 255, 255}, 120, 20, 5, false},
+    }
     alien := entity{pos{300.0, 300.0}, color{255, 255, 255}, 5, 5, 10, 1}
     
     keyState := sdl.GetKeyboardState()
     
+    var frameStart time.Time
+    var elapsedTime float32
+    
     for {
-        
+        frameStart = time.Now()
         for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
             switch event.(type) {
                 case *sdl.QuitEvent:
@@ -83,16 +89,26 @@ func main() {
             }
         }
         
-        player.control(keyState)
+        player.update(keyState, elapsedTime)
+        if player.bullet.shoot == true {
+            player.bullet.update(elapsedTime)
+        }
         
         clear(pixels)
         player.draw(pixels)
         alien.draw(pixels)
+        if player.bullet.shoot == true {
+            player.bullet.draw(pixels)
+        }
         
         texture.Update(nil, pixels, winWidth * 4)
         renderer.Copy(texture, nil, nil)
         renderer.Present()
         
-        sdl.Delay(16)
+        elapsedTime = float32(time.Since(frameStart).Seconds())
+        if elapsedTime < 0.005 {
+            sdl.Delay(5 - uint32(elapsedTime* 1000.0))
+            elapsedTime = float32(time.Since(frameStart).Seconds())
+        }
     }
 }

@@ -36,6 +36,19 @@ type entity struct {
     tex byte
 }
 
+type bullet struct {
+    pos
+    color
+    speed float32
+    h, w float32
+    shoot bool
+}
+
+type ship struct {
+    entity
+    bullet bullet
+}
+
 func (entity *entity) draw(pixels []byte) {
     var multw, multh float32
     if entity.tex == 0 {
@@ -64,12 +77,37 @@ func (entity *entity) draw(pixels []byte) {
     }
 }
 
-func (entity *entity) control(keyState []uint8) {
+func (ship *ship) update(keyState []uint8, elapsedTime float32) {
     if keyState[sdl.SCANCODE_LEFT] != 0 {
-        entity.x -= entity.speed
+        ship.x -= ship.speed * elapsedTime
     }
     if keyState[sdl.SCANCODE_RIGHT] != 0 {
-        entity.x += entity.speed
+        ship.x += ship.speed * elapsedTime
+    }
+    if keyState[sdl.SCANCODE_SPACE] != 0 && ship.bullet.shoot == false {
+        //the 14 is needed because the method to draw doesn't center the ship
+        ship.bullet.x = ship.x + 14
+        ship.bullet.y = ship.y
+        ship.bullet.shoot = true
+    }
+}
+
+func (bullet *bullet) update(elapsedTime float32) {
+    if bullet.y - bullet.h / 2 > 0 {
+        bullet.y -= bullet.speed * elapsedTime
+    } else {
+        bullet.shoot = false
+    }
+}
+
+func (bullet *bullet) draw(pixels []byte) {
+    startx := bullet.x - bullet.w/2
+    starty := bullet.y - bullet.h/2
+    
+    for y := 0; y < int(bullet.h); y++ {
+        for x := 0; x < int(bullet.w); x++ {
+            setPixel(int(startx) + x, int(starty) + y, bullet.color, pixels)
+        }
     }
 }
 
